@@ -1,3 +1,4 @@
+
 <Assembly: System.Reflection.AssemblyTitle("DD's Launcher")> 'FileVersionInfo.FileDescription = AssemblyTitle
 <Assembly: System.Reflection.AssemblyDescription("Launches File starting with the same name from current directory or sub folder")> 'FileVersionInfo.Comments = AssemblyDescription
 <Assembly: System.Reflection.AssemblyFileVersion("1.0.0.0")> 'FileVersionInfo.FileVersion = AssemblyFileVersion
@@ -48,8 +49,9 @@ Module CreateLauncher
 
     Private IconFilePath As String = ""
 
+    Private AdminMode As Boolean = False
 
-
+    Private AppTitle As String = ""
 
     Sub Main(args As String())
 
@@ -60,7 +62,7 @@ Module CreateLauncher
         If args.Length = 0 Then
 
             Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64:]" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64: /debug /admin /title:]" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
@@ -112,6 +114,10 @@ Module CreateLauncher
                 If Not System.IO.File.Exists(X64Var) Then
                     Throw New System.IO.FileNotFoundException("File Not Found! " & arg.Substring("/x64:".Length))
                 End If
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/admin") Then
+                AdminMode = True
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/title:") Then
+                AppTitle = arg.Substring("/title:".Length)
             Else
                 LauncherName = arg
             End If
@@ -361,7 +367,10 @@ Module CreateLauncher
 
         SourceCode += "<Assembly: System.Reflection.AssemblyDescription(""" & FileVersionInfo.Comments & """)>" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "<Assembly: System.Reflection.AssemblyFileVersion(""" & FileVersionInfo.FileVersion & """)>" & Microsoft.VisualBasic.vbCrLf
-        If FileVersionInfo.ProductName.Trim.Length = 0 Then
+        'Portable Apps Takes this as Menu Entry
+        If AppTitle.Trim.Length > 0 Then
+            SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & AppTitle & """)>" & Microsoft.VisualBasic.vbCrLf
+        ElseIf FileVersionInfo.ProductName.Trim.Length = 0 Then
             SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & LauncherName & """)>" & Microsoft.VisualBasic.vbCrLf
         Else
             SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & FileVersionInfo.ProductName & """)>" & Microsoft.VisualBasic.vbCrLf
@@ -430,7 +439,12 @@ Module CreateLauncher
         SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+        If AdminMode Then
+            SourceCode += "                    .UseShellExecute = True" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .Verb = ""runas""" & Microsoft.VisualBasic.vbCrLf
+        Else
+            SourceCode += "                    .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+        End If
         SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .Arguments = String.Join("" "", args)" & Microsoft.VisualBasic.vbCrLf
@@ -440,7 +454,10 @@ Module CreateLauncher
         SourceCode += "                    .RedirectStandardOutput = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            .Start()" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "            Try" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                .Start()" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "            Catch" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "            End Try" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "            End With" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "        End Using" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    End Sub" & Microsoft.VisualBasic.vbCrLf
