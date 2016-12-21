@@ -51,6 +51,7 @@ Module CreateLauncher
 
     Private AdminMode As Boolean = False
     Private UseShellExec As Boolean = False
+    Private IsSilent As Boolean = False
     Private AppTitle As String = ""
 
     Sub Main(args As String())
@@ -62,7 +63,7 @@ Module CreateLauncher
         If args.Length = 0 Then
 
             Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64: /debug /admin /shellexec /title:]" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64: /debug /admin /shellexec /silent /title:]" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
@@ -86,11 +87,10 @@ Module CreateLauncher
             UsageInfo += "x64, x86-64, x86_64, 64Bit, 64-Bit, 64_Bit, 64, Win64, amd64" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "x32, x86, 32Bit, 32-Bit, 32_Bit, 32, Win32, amd32" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-
             System.Windows.Forms.MessageBox.Show(UsageInfo)
             Exit Sub
         End If
-        Dim IsDebug As Boolean = False, AppVar As String = "", DirVar As String = "", ExeVar As String = "", X32Var As String = "", X64Var As String = ""
+            Dim IsDebug As Boolean = False, AppVar As String = "", DirVar As String = "", ExeVar As String = "", X32Var As String = "", X64Var As String = ""
         For Each arg As String In args
             If arg.ToLowerInvariant.Trim = "/debug".ToLowerInvariant.Trim Then
                 IsDebug = True
@@ -121,6 +121,8 @@ Module CreateLauncher
                 UseShellExec = True
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/title:") Then
                 AppTitle = arg.Substring("/title:".Length)
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/silent") Then
+                IsSilent = True
             Else
                 LauncherName = arg
             End If
@@ -243,12 +245,13 @@ Module CreateLauncher
             System.IO.File.Delete(System.IO.Path.Combine(CurrentDirectory, IconFilePath))
         End If
 
-        If (Results.Errors.HasErrors) Then
-            System.Windows.Forms.MessageBox.Show("Can not customize for App: " & LauncherName)
-        Else
-            System.Windows.Forms.MessageBox.Show("Customized for App: " & LauncherName & Microsoft.VisualBasic.vbCrLf & "Relative Paths: " & Microsoft.VisualBasic.vbCrLf & "64-Bit @ " & ExeRelativePath64 & Microsoft.VisualBasic.vbCrLf & "32-Bit @ " & ExeRelativePath32)
+        If Not IsSilent Then
+            If (Results.Errors.HasErrors) Then
+                System.Windows.Forms.MessageBox.Show("Can not customize for App: " & LauncherName)
+            Else
+                System.Windows.Forms.MessageBox.Show("Customized for App: " & LauncherName & Microsoft.VisualBasic.vbCrLf & "Relative Paths: " & Microsoft.VisualBasic.vbCrLf & "64-Bit @ " & ExeRelativePath64 & Microsoft.VisualBasic.vbCrLf & "32-Bit @ " & ExeRelativePath32)
+            End If
         End If
-
 
     End Sub
 
