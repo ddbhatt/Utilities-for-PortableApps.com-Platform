@@ -117,6 +117,8 @@ Module CreateLauncher
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/admin") Then
                 AdminMode = True
                 UseShellExec = True
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/shellexec") Then
+                UseShellExec = True
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/title:") Then
                 AppTitle = arg.Substring("/title:".Length)
             Else
