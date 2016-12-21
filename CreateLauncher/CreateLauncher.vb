@@ -53,6 +53,7 @@ Module CreateLauncher
     Private UseShellExec As Boolean = False
     Private IsSilent As Boolean = False
     Private AppTitle As String = ""
+    Private WindowStyle As String = "HIDDEN"
 
     Sub Main(args As String())
 
@@ -63,7 +64,11 @@ Module CreateLauncher
         If args.Length = 0 Then
 
             Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64: /debug /admin /shellexec /silent /title:]" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "Custom Options:" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[/app: /dir: /exe: /x32: /x64: /title:] They Take Arguments" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[/debug /admin /shellexec /silent] Admin is always Shellexec" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[/normal /max /min] - Window Styles - Default is HIDDEN - Last One Passed is Used" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
@@ -123,6 +128,12 @@ Module CreateLauncher
                 AppTitle = arg.Substring("/title:".Length)
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/silent") Then
                 IsSilent = True
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/normal") Then
+                WindowStyle = "NORMAL"
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/max") Then
+                WindowStyle = "MAXIMIZED"
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/min") Then
+                WindowStyle = "MINIMIZED"
             Else
                 LauncherName = arg
             End If
@@ -460,7 +471,15 @@ Module CreateLauncher
         SourceCode += "                    .RedirectStandardError = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .RedirectStandardInput = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .RedirectStandardOutput = False" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden" & Microsoft.VisualBasic.vbCrLf
+        If WindowStyle = "NORMAL" Then
+            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal" & Microsoft.VisualBasic.vbCrLf
+        ElseIf WindowStyle = "MAXIMIZED" Then
+            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Maximized" & Microsoft.VisualBasic.vbCrLf
+        ElseIf WindowStyle = "MINIMIZED" Then
+            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Minimized" & Microsoft.VisualBasic.vbCrLf
+        Else
+            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden" & Microsoft.VisualBasic.vbCrLf
+        End If
         SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "            Try" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                .Start()" & Microsoft.VisualBasic.vbCrLf
