@@ -50,7 +50,7 @@ Module CreateLauncher
     Private IconFilePath As String = ""
 
     Private AdminMode As Boolean = False
-
+    Private UseShellExec As Boolean = False
     Private AppTitle As String = ""
 
     Sub Main(args As String())
@@ -62,7 +62,7 @@ Module CreateLauncher
         If args.Length = 0 Then
 
             Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64: /debug /admin /title:]" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[Custom Options:/app: /dir: /exe: /x32: /x64: /debug /admin /shellexec /title:]" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
@@ -116,6 +116,7 @@ Module CreateLauncher
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/admin") Then
                 AdminMode = True
+                UseShellExec = True
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/title:") Then
                 AppTitle = arg.Substring("/title:".Length)
             Else
@@ -439,11 +440,13 @@ Module CreateLauncher
         SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
-        If AdminMode Then
+        If UseShellExec Then
             SourceCode += "                    .UseShellExecute = True" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                    .Verb = ""runas""" & Microsoft.VisualBasic.vbCrLf
         Else
             SourceCode += "                    .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+        End If
+        If AdminMode Then
+            SourceCode += "                    .Verb = ""runas""" & Microsoft.VisualBasic.vbCrLf
         End If
         SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
