@@ -430,12 +430,11 @@ Module CreateLauncher
         SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .UseShellExecute = True" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                    .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .Arguments = String.Join("" "", args)" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .CreateNoWindow = True" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    '.UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .RedirectStandardError = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .RedirectStandardInput = False" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .RedirectStandardOutput = False" & Microsoft.VisualBasic.vbCrLf
