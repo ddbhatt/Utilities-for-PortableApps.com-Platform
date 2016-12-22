@@ -46,6 +46,9 @@ Module CreateLauncher
     Private ExePath64 As String = CreateLauncher.CurrentDirectory & ExeRelativePath64
     Private Available64 As Boolean = System.IO.File.Exists(ExePath64)
 
+    Private CustomCmd32 As String = ""
+    Private CustomCmd64 As String = ""
+
     Private IconFilePath As String = ""
 
     Private AdminMode As Boolean = False
@@ -53,6 +56,45 @@ Module CreateLauncher
     Private IsSilent As Boolean = False
     Private AppTitle As String = ""
     Private WindowStyle As String = "HIDDEN"
+    Private IsConsoleApp As Boolean = False
+    Private IsCustomCmd As Boolean = False
+
+    Public Sub ShowUsage()
+        Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "Custom Options:" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/app: /dir: /exe: /x32: /x64: /title:] They Take Arguments" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/debug /admin /shellexec /silent] Admin is always Shellexec" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/normal /max /min] - Window Styles - Default is HIDDEN - Last One Passed is Used" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/ico: /noicon] Icon File" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/console] ConsoleApp (No ShellExec)" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/cmd: /cmd32: /cmd64:] CustomCmd 32 will run only on 32bit and 64 will run only on 64 bit (No Admin, No ShellExec, Normal Console Only)" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName\AppName.exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName\AppName64.exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName\x64\AppName.exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName\x86\AppName.exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\x64\AppName.exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\x86\AppName.exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName (32-Bit).exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "\AppName (64-Bit).exe" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "In-Name Detection Keywords: " & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "x64, x86-64, x86_64, 64Bit, 64-Bit, 64_Bit, 64, Win64, amd64" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "x32, x86, 32Bit, 32-Bit, 32_Bit, 32, Win32, amd32" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
+        System.Windows.Forms.MessageBox.Show(UsageInfo)
+        System.Environment.Exit(1)
+    End Sub
 
     Sub Main(args As String())
 
@@ -61,39 +103,7 @@ Module CreateLauncher
         '    Exit Sub
         'End If
         If args.Length = 0 Then
-
-            Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "Custom Options:" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[/app: /dir: /exe: /x32: /x64: /title:] They Take Arguments" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[/debug /admin /shellexec /silent] Admin is always Shellexec" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[/normal /max /min] - Window Styles - Default is HIDDEN - Last One Passed is Used" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[/ico: ] Icon File" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName\AppName.exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName\AppName64.exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName\x64\AppName.exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName\x86\AppName.exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\x64\AppName.exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\x86\AppName.exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName.exe {Launcher}" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName (32-Bit).exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "\AppName (64-Bit).exe" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "In-Name Detection Keywords: " & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "x64, x86-64, x86_64, 64Bit, 64-Bit, 64_Bit, 64, Win64, amd64" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "x32, x86, 32Bit, 32-Bit, 32_Bit, 32, Win32, amd32" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-            System.Windows.Forms.MessageBox.Show(UsageInfo)
-            Exit Sub
+            ShowUsage()
         End If
         Dim IsDebug As Boolean = False, AppVar As String = "", DirVar As String = "", ExeVar As String = "", X32Var As String = "", X64Var As String = ""
         For Each arg As String In args
@@ -104,20 +114,27 @@ Module CreateLauncher
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/dir:") Then
                 DirVar = arg.Substring("/dir:".Length)
                 If Not System.IO.Directory.Exists(System.IO.Path.Combine(CurrentDirectory, DirVar)) Then
-                    Throw New System.IO.DirectoryNotFoundException("Directory Not Found! " & arg.Substring("/dir:".Length))
+                    System.Windows.Forms.MessageBox.Show("Directory Not Found! " & arg.Substring("/dir:".Length))
+                    System.Environment.Exit(1)
                 End If
 
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/exe:") Then
                 ExeVar = System.IO.Path.GetFileNameWithoutExtension(arg.Substring("/exe:".Length))
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/x32:") Then
                 X32Var = arg.Substring("/x32:".Length)
-                If Not System.IO.File.Exists(X32Var) Then
-                    Throw New System.IO.FileNotFoundException("File Not Found! " & arg.Substring("/x32:".Length))
+                If Not System.IO.File.Exists(X32Var) AndAlso Not System.IO.File.Exists(CurrentDirectory & X32Var) Then
+                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/x32:".Length))
+                    System.Environment.Exit(1)
+                ElseIf System.IO.File.Exists(CurrentDirectory & X32Var) Then
+                    X32Var = CurrentDirectory & X32Var
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/x64:") Then
                 X64Var = arg.Substring("/x64:".Length)
-                If Not System.IO.File.Exists(X64Var) Then
-                    Throw New System.IO.FileNotFoundException("File Not Found! " & arg.Substring("/x64:".Length))
+                If Not System.IO.File.Exists(X64Var) AndAlso Not System.IO.File.Exists(CurrentDirectory & X64Var) Then
+                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/x64:".Length))
+                    System.Environment.Exit(1)
+                ElseIf System.IO.File.Exists(CurrentDirectory & X64Var) Then
+                    X64Var = CurrentDirectory & X64Var
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/admin") Then
                 AdminMode = True
@@ -136,9 +153,41 @@ Module CreateLauncher
                 WindowStyle = "MINIMIZED"
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/ico:") Then
                 IconFilePath = arg.Substring("/ico:".Length)
-                If Not System.IO.File.Exists(X64Var) Then
-                    Throw New System.IO.FileNotFoundException("File Not Found! " & arg.Substring("/ico:".Length))
+                If Not System.IO.File.Exists(IconFilePath) Then
+                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/ico:".Length))
+                    System.Environment.Exit(1)
                 End If
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/noicon") Then
+                IconFilePath = " "
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/console") Then
+                IsConsoleApp = True
+                UseShellExec = False
+                WindowStyle = "NORMAL"
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/cmd:") Then
+                CustomCmd32 = arg.Substring("/cmd:".Length)
+                CustomCmd64 = CustomCmd32
+                AdminMode = False
+                IsConsoleApp = True
+                UseShellExec = False
+                WindowStyle = "NORMAL"
+                IsCustomCmd = True
+                If IconFilePath.Trim.Length = 0 Then IconFilePath = " "
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/cmd32:") Then
+                CustomCmd32 = arg.Substring("/cmd32:".Length)
+                AdminMode = False
+                IsConsoleApp = True
+                UseShellExec = False
+                WindowStyle = "NORMAL"
+                IsCustomCmd = True
+                If IconFilePath.Trim.Length = 0 Then IconFilePath = " "
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/cmd64:") Then
+                CustomCmd64 = arg.Substring("/cmd64:".Length)
+                AdminMode = False
+                IsConsoleApp = True
+                UseShellExec = False
+                WindowStyle = "NORMAL"
+                IsCustomCmd = True
+                If IconFilePath.Trim.Length = 0 Then IconFilePath = " "
             Else
                 LauncherName = arg
             End If
@@ -159,67 +208,102 @@ Module CreateLauncher
             LauncherName = System.IO.Path.GetFileNameWithoutExtension(X32Var)
         End If
 
+
         Dim DetailsFromExe As String = ""
+        Dim lvi As LauncherVersionInfo = Nothing
 
-        Dim FolderName As String = CreateLauncher.CurrentDirectory
-        If DirVar.Trim.Length > 0 Then
-            If System.IO.Directory.Exists(System.IO.Path.Combine(FolderName, DirVar)) Then
-                FolderName = System.IO.Path.Combine(FolderName, DirVar)
-            End If
+        If IsCustomCmd Then
+            lvi = New LauncherVersionInfo(AppTitle, "1.0.0.0")
         Else
-            If System.IO.Directory.Exists(System.IO.Path.Combine(FolderName, LauncherName)) Then
-                FolderName = System.IO.Path.Combine(FolderName, LauncherName)
-            End If
-        End If
 
-        If X32Var.Trim.Length > 0 Then
-            ExePath32 = X32Var
-        Else
-            If ExeVar.Trim.Length > 0 Then
-                ExePath32 = FindExe(FolderName, ExeVar, False)
+            Dim FolderName As String = CreateLauncher.CurrentDirectory
+            If DirVar.Trim.Length > 0 Then
+                If System.IO.Directory.Exists(System.IO.Path.Combine(FolderName, DirVar)) Then
+                    FolderName = System.IO.Path.Combine(FolderName, DirVar)
+                End If
             Else
-                ExePath32 = FindExe(FolderName, LauncherName, False)
+                If System.IO.Directory.Exists(System.IO.Path.Combine(FolderName, LauncherName)) Then
+                    FolderName = System.IO.Path.Combine(FolderName, LauncherName)
+                End If
             End If
 
-        End If
-        ExeRelativePath32 = ExePath32.Replace(CreateLauncher.CurrentDirectory, "")
-        If ExePath32.Trim.Length > 0 Then
-            Available32 = True
-            EXE_CheckSum_32 = ComputeFileHash(ExePath32)
-        End If
-        If X64Var.Trim.Length > 0 Then
-            ExePath64 = X64Var
-        Else
-            If ExeVar.Trim.Length > 0 Then
-                ExePath64 = FindExe(FolderName, ExeVar, True)
+            If X32Var.Trim.Length > 0 Then
+                ExePath32 = X32Var
             Else
-                ExePath64 = FindExe(FolderName, LauncherName, True)
-            End If
-        End If
-        ExeRelativePath64 = ExePath64.Replace(CreateLauncher.CurrentDirectory, "")
-        If ExePath64.Trim.Length > 0 Then
-            Available64 = True
-            EXE_CheckSum_64 = ComputeFileHash(ExePath64)
-        End If
+                If ExeVar.Trim.Length > 0 Then
+                    ExePath32 = FindExe(FolderName, ExeVar, False)
+                Else
+                    ExePath32 = FindExe(FolderName, LauncherName, False)
+                End If
 
-        If Available64 And OsSystemBit = 64 Then
-            'Take Details from x64
-            DetailsFromExe = ExePath64
-        ElseIf Available32 Then
-            'Take Details from x32
-            DetailsFromExe = ExePath32
-        Else
-            'x32 not available only x64 available but system is 32 bit
-            If Available64 Then
+            End If
+            ExeRelativePath32 = ExePath32.Replace(CreateLauncher.CurrentDirectory, "")
+            If ExePath32.Trim.Length > 0 Then
+                Available32 = True
+                EXE_CheckSum_32 = ComputeFileHash(ExePath32)
+            End If
+            If X64Var.Trim.Length > 0 Then
+                ExePath64 = X64Var
+            Else
+                If ExeVar.Trim.Length > 0 Then
+                    ExePath64 = FindExe(FolderName, ExeVar, True)
+                Else
+                    ExePath64 = FindExe(FolderName, LauncherName, True)
+                End If
+            End If
+            ExeRelativePath64 = ExePath64.Replace(CreateLauncher.CurrentDirectory, "")
+            If ExePath64.Trim.Length > 0 Then
+                Available64 = True
+                EXE_CheckSum_64 = ComputeFileHash(ExePath64)
+            End If
+
+            If Available64 And OsSystemBit = 64 Then
+                'Take Details from x64
                 DetailsFromExe = ExePath64
+            ElseIf Available32 Then
+                'Take Details from x32
+                DetailsFromExe = ExePath32
             Else
-                System.Console.WriteLine("Can not continue!")
-                System.Environment.Exit(1)
+                'x32 not available only x64 available but system is 32 bit
+                If Available64 Then
+                    DetailsFromExe = ExePath64
+                Else
+                    System.Console.WriteLine("Can not continue!")
+                    System.Environment.Exit(1)
+                End If
             End If
-        End If
 
+            'Get File Informations
+            Dim fvi As System.Diagnostics.FileVersionInfo
+            fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(DetailsFromExe)
+            lvi = New LauncherVersionInfo(fvi)
+
+            If IconFilePath.Length = 0 Then 'No Trim so we can have exe with default icons for exe
+                Try
+                    'Extract Icon to Temp Directory
+                    'iconsext.exe /save "C:\Users\Devang\Cloud\Dropbox\Development\Launcher\Launcher\bin\Debug\CCleaner (64-Bit).exe" "C:\Users\Devang\AppData\Local\Temp\" -icons
+                    Dim TsudaKageyu As New TsudaKageyu.IconExtractor(DetailsFromExe)
+                    'IconFilePath = System.IO.Path.GetTempFileName & ".ico"
+                    'IconFilePath = System.IO.Path.GetTempPath & LauncherName & ".ico"
+                    IconFilePath = LauncherName.Replace(" ", "_") & ".ico"
+                    Using fs As New System.IO.FileStream(System.IO.Path.Combine(CurrentDirectory, IconFilePath), System.IO.FileMode.Create)
+                        TsudaKageyu.Save(0, fs)
+                    End Using
+                Catch
+                    If IconFilePath.Trim.Length > 0 AndAlso System.IO.File.Exists(IconFilePath) Then
+                        System.IO.File.Delete(IconFilePath)
+                    End If
+                    'Continue Without Error with No Icon
+                    IconFilePath = ""
+                    'System.Windows.Forms.MessageBox.Show("Error Extracting Icon! maybe forgot to use /noicon?")
+                    'System.Environment.Exit(1)
+                End Try
+            End If
+
+        End If
         If IsDebug Then
-            Dim DebugText As String = "CurrentDirectory: " & CurrentDirectory & Microsoft.VisualBasic.vbCrLf
+            Dim DebugText As String = ""
+            DebugText += "CurrentDirectory: " & CurrentDirectory & Microsoft.VisualBasic.vbCrLf
             DebugText += "AppDir: " & AppDir & Microsoft.VisualBasic.vbCrLf
             DebugText += "OsSystemBit: " & OsSystemBit & Microsoft.VisualBasic.vbCrLf
             DebugText += "ExePath32: " & ExePath32 & Microsoft.VisualBasic.vbCrLf
@@ -228,20 +312,6 @@ Module CreateLauncher
             Exit Sub
         End If
 
-        If IconFilePath.Length = 0 Then 'No Trim so we can have exe with default icons for custom cmd
-            'Extract Icon to Temp Directory
-            'iconsext.exe /save "C:\Users\Devang\Cloud\Dropbox\Development\Launcher\Launcher\bin\Debug\CCleaner (64-Bit).exe" "C:\Users\Devang\AppData\Local\Temp\" -icons
-            Dim TsudaKageyu As New TsudaKageyu.IconExtractor(DetailsFromExe)
-            'IconFilePath = System.IO.Path.GetTempFileName & ".ico"
-            'IconFilePath = System.IO.Path.GetTempPath & LauncherName & ".ico"
-            IconFilePath = LauncherName.Replace(" ", "_") & ".ico"
-            Using fs As New System.IO.FileStream(System.IO.Path.Combine(CurrentDirectory, IconFilePath), System.IO.FileMode.Create)
-                TsudaKageyu.Save(0, fs)
-            End Using
-        End If
-        'Get File Informations
-        Dim fvi As System.Diagnostics.FileVersionInfo
-        fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(DetailsFromExe)
 
         'Actual Rebuild Process
         Dim Provider As New Microsoft.VisualBasic.VBCodeProvider
@@ -252,14 +322,22 @@ Module CreateLauncher
         Parameters.GenerateInMemory = False
 
 
-        If IconFilePath.Trim.Length > 0 Then
-            Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu /win32icon:" & IconFilePath
+        If IsConsoleApp Then
+            If IconFilePath.Trim.Length > 0 Then
+                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:exe /platform:anycpu /win32icon:" & IconFilePath
+            Else
+                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:exe /platform:anycpu"
+            End If
         Else
-            Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu"
+            If IconFilePath.Trim.Length > 0 Then
+                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu /win32icon:" & IconFilePath
+            Else
+                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu"
+            End If
         End If
 
 
-        Dim SourceCode As String = CustomizeSourceCode(FileVersionInfo:=fvi, UseCheckSum:=False, ComVisible:=False, ObfuscateAssembly:=True)
+        Dim SourceCode As String = CustomizeSourceCode(lvi, UseCheckSum:=False, ComVisible:=False, ObfuscateAssembly:=True)
         Dim Results As System.CodeDom.Compiler.CompilerResults = Provider.CompileAssemblyFromSource(Parameters, SourceCode)
 
         If System.IO.File.Exists(IconFilePath) Then
@@ -386,127 +464,137 @@ Module CreateLauncher
 
         Return RetVar
     End Function
-    Private Function CustomizeSourceCode(FileVersionInfo As System.Diagnostics.FileVersionInfo, Optional UseCheckSum As Boolean = True, Optional ComVisible As Boolean = False, Optional ObfuscateAssembly As Boolean = False) As String
-        Dim SourceCode As String = ""
-        If FileVersionInfo.FileDescription.Trim.Length = 0 Then
-            SourceCode += "<Assembly: System.Reflection.AssemblyTitle(""" & LauncherName & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
-        Else
-            SourceCode += "<Assembly: System.Reflection.AssemblyTitle(""" & FileVersionInfo.FileDescription & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
-        End If
+    Private Function CustomizeSourceCode(LVI As LauncherVersionInfo, Optional UseCheckSum As Boolean = True, Optional ComVisible As Boolean = False, Optional ObfuscateAssembly As Boolean = False) As String
+        Dim SourceCode As String = LVI.ToString
 
-        SourceCode += "<Assembly: System.Reflection.AssemblyDescription(""" & FileVersionInfo.Comments & """)>" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "<Assembly: System.Reflection.AssemblyFileVersion(""" & FileVersionInfo.FileVersion & """)>" & Microsoft.VisualBasic.vbCrLf
-        'Portable Apps Takes this as Menu Entry
-        If AppTitle.Trim.Length > 0 Then
-            SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & AppTitle & """)>" & Microsoft.VisualBasic.vbCrLf
-        ElseIf FileVersionInfo.ProductName.Trim.Length = 0 Then
-            SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & LauncherName & """)>" & Microsoft.VisualBasic.vbCrLf
-        Else
-            SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & FileVersionInfo.ProductName & """)>" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "<Assembly: System.Reflection.AssemblyInformationalVersion(""" & FileVersionInfo.ProductVersion & """)>" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "<Assembly: System.Reflection.AssemblyCompany(""" & FileVersionInfo.CompanyName & """)>" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "<Assembly: System.Reflection.AssemblyCopyright(""" & FileVersionInfo.LegalCopyright & """)>" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "<Assembly: System.Reflection.AssemblyTrademark(""" & FileVersionInfo.LegalTrademarks & """)>" & Microsoft.VisualBasic.vbCrLf
-        If ComVisible Then
-            SourceCode += "<Assembly: System.Runtime.InteropServices.ComVisible(True)>" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "<Assembly: System.Runtime.InteropServices.Guid(""" & System.Guid.NewGuid.ToString() & """)>" & Microsoft.VisualBasic.vbCrLf
-        End If
-        'FileVersionInfo
-        SourceCode += "<Assembly: System.Reflection.AssemblyVersion(""" & FileVersionInfo.FileMajorPart & "." & FileVersionInfo.FileMinorPart & "." & FileVersionInfo.FileBuildPart & "." & FileVersionInfo.FilePrivatePart & """)>" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "<Assembly: System.Resources.NeutralResourcesLanguage(""en"")>" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "<Assembly: System.Reflection.AssemblyCulture("""")>" & Microsoft.VisualBasic.vbCrLf
-        If ObfuscateAssembly Then
-            SourceCode += "<Assembly: System.Reflection.ObfuscateAssembly(True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "<Assembly: System.Reflection.Obfuscation(ApplyToMembers:=True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
-        End If
         SourceCode += "Module Launcher" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private CurrentDirectory As String = System.Environment.CurrentDirectory" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private AppDir As String = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase.Replace(""file:///"", """"))" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private ExeRelativePath32 As String = """ & ExeRelativePath32 & """" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private ExeRelativePath64 As String = """ & ExeRelativePath64 & """" & Microsoft.VisualBasic.vbCrLf
-        If UseCheckSum Then
-            SourceCode += "    Private EXE_CheckSum_32 As String = """ & EXE_CheckSum_32 & """" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "    Private EXE_CheckSum_64 As String = """ & EXE_CheckSum_64 & """" & Microsoft.VisualBasic.vbCrLf
+
+        If IsCustomCmd Then
+            If CustomCmd32.Trim.Length > 0 Then SourceCode += "    Private CustomCmd32 As String = """ & CustomCmd32 & """" & Microsoft.VisualBasic.vbCrLf
+            If CustomCmd64.Trim.Length > 0 Then SourceCode += "    Private CustomCmd64 As String = """ & CustomCmd64 & """" & Microsoft.VisualBasic.vbCrLf
+        Else
+            SourceCode += "    Private ExeRelativePath32 As String = """ & ExeRelativePath32 & """" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "    Private ExeRelativePath64 As String = """ & ExeRelativePath64 & """" & Microsoft.VisualBasic.vbCrLf
+            If UseCheckSum Then
+                SourceCode += "    Private EXE_CheckSum_32 As String = """ & EXE_CheckSum_32 & """" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "    Private EXE_CheckSum_64 As String = """ & EXE_CheckSum_64 & """" & Microsoft.VisualBasic.vbCrLf
+            End If
+
+            SourceCode += "    Private ExePath32 As String = Launcher.AppDir & ExeRelativePath32" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "    Private Available32 As Boolean = System.IO.File.Exists(ExePath32)" & Microsoft.VisualBasic.vbCrLf
+
+            SourceCode += "    Private ExePath64 As String = Launcher.AppDir & ExeRelativePath64" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "    Private Available64 As Boolean = System.IO.File.Exists(ExePath64)" & Microsoft.VisualBasic.vbCrLf
         End If
+
         SourceCode += "    Private OsSystemBit As Integer = 8 * System.IntPtr.Size" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private LauncherName As String = System.IO.Path.GetFileNameWithoutExtension(System.Environment.GetCommandLineArgs(0))" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private ExePath32 As String = Launcher.AppDir & ExeRelativePath32" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private Available32 As Boolean = System.IO.File.Exists(ExePath32)" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private ExePath64 As String = Launcher.AppDir & ExeRelativePath64" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private Available64 As Boolean = System.IO.File.Exists(ExePath64)" & Microsoft.VisualBasic.vbCrLf
+
         SourceCode += "    Sub Main(args As String())" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "        Dim ExePath As String = """"" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "        If OsSystemBit = 64 And Available64 Then" & Microsoft.VisualBasic.vbCrLf
-        If UseCheckSum Then
-            SourceCode += "            If HasChanged(ExePath64, EXE_CheckSum_64) Then" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                System.Windows.Forms.MessageBox.Show(""64-Bit exe changed? Checksum do not match!"")" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                Exit Sub" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "            Else" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "                ExePath = ExePath64" & Microsoft.VisualBasic.vbCrLf
-        If UseCheckSum Then
-            SourceCode += "            End If" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "        ElseIf Available32 Then" & Microsoft.VisualBasic.vbCrLf
-        If UseCheckSum Then
-            SourceCode += "            If HasChanged(ExePath32, EXE_CheckSum_32) Then" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                System.Windows.Forms.MessageBox.Show(""32-Bit exe changed? Checksum do not match!"")" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                Exit Sub" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "            Else" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "                ExePath = ExePath32" & Microsoft.VisualBasic.vbCrLf
-        If UseCheckSum Then
-            SourceCode += "            End If" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "        Else" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            System.Windows.Forms.MessageBox.Show(""Exe(s) not found!"")" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            Exit Sub" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "        Using cmdProcess As New System.Diagnostics.Process" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            With cmdProcess" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                        .Arguments = """""""" & String.Join("" "", args) & """"""""" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    End If" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
-        If UseShellExec Then
-            SourceCode += "                    .UseShellExecute = True" & Microsoft.VisualBasic.vbCrLf
+        If IsCustomCmd Then
+            SourceCode += "        Dim Command As String = """"" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        If OsSystemBit = 64 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Command = CustomCmd64" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        ElseIf OsSystemBit = 32 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Command = CustomCmd32" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        If Command.Trim.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Using cmdProcess As New System.Diagnostics.Process" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                With cmdProcess" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    With .StartInfo" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .FileName = ""cmd.exe""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .WorkingDirectory = CurrentDirectory" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                            .Arguments = ""/c "" & Command & "" "" & String.Join("" "", args)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        Else" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                            .Arguments = ""/c "" & Command" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    End With" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .Start()" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .WaitForExit()" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            End Using" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
         Else
-            SourceCode += "                    .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Dim ExePath As String = """"" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        If OsSystemBit = 64 And Available64 Then" & Microsoft.VisualBasic.vbCrLf
+            If UseCheckSum Then
+                SourceCode += "            If HasChanged(ExePath64, EXE_CheckSum_64) Then" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "                System.Windows.Forms.MessageBox.Show(""64-Bit exe changed? Checksum Do Not match!"")" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "                Exit Sub" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "            Else" & Microsoft.VisualBasic.vbCrLf
+            End If
+            SourceCode += "                ExePath = ExePath64" & Microsoft.VisualBasic.vbCrLf
+            If UseCheckSum Then
+                SourceCode += "            End If" & Microsoft.VisualBasic.vbCrLf
+            End If
+            SourceCode += "        ElseIf Available32 Then" & Microsoft.VisualBasic.vbCrLf
+            If UseCheckSum Then
+                SourceCode += "            If HasChanged(ExePath32, EXE_CheckSum_32) Then" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "                System.Windows.Forms.MessageBox.Show(""32-Bit exe changed? Checksum Do Not match!"")" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "                Exit Sub" & Microsoft.VisualBasic.vbCrLf
+                SourceCode += "            Else" & Microsoft.VisualBasic.vbCrLf
+            End If
+            SourceCode += "                ExePath = ExePath32" & Microsoft.VisualBasic.vbCrLf
+            If UseCheckSum Then
+                SourceCode += "            End If" & Microsoft.VisualBasic.vbCrLf
+            End If
+            SourceCode += "        Else" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            System.Windows.Forms.MessageBox.Show(""Exe(s) Not found!"")" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Exit Sub" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
+
+            SourceCode += "        Using cmdProcess As New System.Diagnostics.Process" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            With cmdProcess" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .Arguments = """""""" & String.Join("" "", args) & """"""""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
+            If UseShellExec Then
+                SourceCode += "                    .UseShellExecute = True" & Microsoft.VisualBasic.vbCrLf
+            Else
+                SourceCode += "                    .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+            End If
+            SourceCode += "                    .RedirectStandardError = False" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .RedirectStandardInput = False" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .RedirectStandardOutput = False" & Microsoft.VisualBasic.vbCrLf
+            If AdminMode Then
+                SourceCode += "                    .Verb = ""runas""" & Microsoft.VisualBasic.vbCrLf
+            End If
+            If WindowStyle = "NORMAL" OrElse WindowStyle = "MAXIMIZED" OrElse WindowStyle = "MINIMIZED" Then
+                SourceCode += "                    .CreateNoWindow = False" & Microsoft.VisualBasic.vbCrLf
+            Else
+                SourceCode += "                    .CreateNoWindow = True" & Microsoft.VisualBasic.vbCrLf
+            End If
+
+            If WindowStyle = "NORMAL" Then
+                SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal" & Microsoft.VisualBasic.vbCrLf
+            ElseIf WindowStyle = "MAXIMIZED" Then
+                SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Maximized" & Microsoft.VisualBasic.vbCrLf
+            ElseIf WindowStyle = "MINIMIZED" Then
+                SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Minimized" & Microsoft.VisualBasic.vbCrLf
+            Else
+                SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden" & Microsoft.VisualBasic.vbCrLf
+            End If
+            SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Try" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                .Start()" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                .WaitForExit()" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Catch" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            End Try" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            End With" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End Using" & Microsoft.VisualBasic.vbCrLf
         End If
-        If AdminMode Then
-            SourceCode += "                    .Verb = ""runas""" & Microsoft.VisualBasic.vbCrLf
-        End If
-        If WindowStyle = "NORMAL" OrElse WindowStyle = "MAXIMIZED" OrElse WindowStyle = "MINIMIZED" Then
-            SourceCode += "                    .CreateNoWindow = False" & Microsoft.VisualBasic.vbCrLf
-        Else
-            SourceCode += "                    .CreateNoWindow = True" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "                    .RedirectStandardError = False" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .RedirectStandardInput = False" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                    .RedirectStandardOutput = False" & Microsoft.VisualBasic.vbCrLf
-        If WindowStyle = "NORMAL" Then
-            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal" & Microsoft.VisualBasic.vbCrLf
-        ElseIf WindowStyle = "MAXIMIZED" Then
-            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Maximized" & Microsoft.VisualBasic.vbCrLf
-        ElseIf WindowStyle = "MINIMIZED" Then
-            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Minimized" & Microsoft.VisualBasic.vbCrLf
-        Else
-            SourceCode += "                    .WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden" & Microsoft.VisualBasic.vbCrLf
-        End If
-        SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            Try" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "                .Start()" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            Catch" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            End Try" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "            End With" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "        End Using" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    End Sub" & Microsoft.VisualBasic.vbCrLf
-        If UseCheckSum Then
+        If Not IsCustomCmd And UseCheckSum Then
             SourceCode += "    Private Function ComputeFileHash(ByVal fileName As String) As String" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "        Dim RetVar(0) As Byte" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "        If System.IO.File.Exists(fileName) Then" & Microsoft.VisualBasic.vbCrLf
@@ -537,5 +625,110 @@ Module CreateLauncher
 
         Return SourceCode
     End Function
+
+
+    'If FileVersionInfo.FileDescription Is Nothing OrElse FileVersionInfo.FileDescription.Trim.Length = 0 Then
+    '    SourceCode += "<Assembly: System.Reflection.AssemblyTitle(""" & LauncherName & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
+    'Else
+    '    SourceCode += "<Assembly: System.Reflection.AssemblyTitle(""" & FileVersionInfo.FileDescription & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
+    'End If
+
+    'If FileVersionInfo.Comments IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyDescription(""" & FileVersionInfo.Comments & """)>" & Microsoft.VisualBasic.vbCrLf
+    'If FileVersionInfo.FileVersion IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyFileVersion(""" & FileVersionInfo.FileVersion & """)>" & Microsoft.VisualBasic.vbCrLf
+    ''Portable Apps Takes this as Menu Entry
+    'If AppTitle.Trim.Length > 0 Then
+    '    SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & AppTitle & """)>" & Microsoft.VisualBasic.vbCrLf
+    'ElseIf FileVersionInfo.ProductName Is Nothing OrElse FileVersionInfo.ProductName.Trim.Length = 0 Then
+    '    SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & LauncherName & """)>" & Microsoft.VisualBasic.vbCrLf
+    'Else
+    '    SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & FileVersionInfo.ProductName & """)>" & Microsoft.VisualBasic.vbCrLf
+    'End If
+    'If FileVersionInfo.ProductVersion IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyInformationalVersion(""" & FileVersionInfo.ProductVersion & """)>" & Microsoft.VisualBasic.vbCrLf
+    'If FileVersionInfo.CompanyName IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyCompany(""" & FileVersionInfo.CompanyName & """)>" & Microsoft.VisualBasic.vbCrLf
+    'If FileVersionInfo.LegalCopyright IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyCopyright(""" & FileVersionInfo.LegalCopyright & """)>" & Microsoft.VisualBasic.vbCrLf
+    'If FileVersionInfo.LegalTrademarks IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyTrademark(""" & FileVersionInfo.LegalTrademarks & """)>" & Microsoft.VisualBasic.vbCrLf
+    'If ComVisible Then
+    '    SourceCode += "<Assembly: System.Runtime.InteropServices.ComVisible(True)>" & Microsoft.VisualBasic.vbCrLf
+    '    SourceCode += "<Assembly: System.Runtime.InteropServices.Guid(""" & System.Guid.NewGuid.ToString() & """)>" & Microsoft.VisualBasic.vbCrLf
+    'End If
+    ''FileVersionInfo
+    'If FileVersionInfo.FileVersion IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyVersion(""" & FileVersionInfo.FileMajorPart & "." & FileVersionInfo.FileMinorPart & "." & FileVersionInfo.FileBuildPart & "." & FileVersionInfo.FilePrivatePart & """)>" & Microsoft.VisualBasic.vbCrLf
+    'SourceCode += "<Assembly: System.Resources.NeutralResourcesLanguage(""en"")>" & Microsoft.VisualBasic.vbCrLf
+    'SourceCode += "<Assembly: System.Reflection.AssemblyCulture("""")>" & Microsoft.VisualBasic.vbCrLf
+    'If ObfuscateAssembly Then
+    '    SourceCode += "<Assembly: System.Reflection.ObfuscateAssembly(True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
+    '    SourceCode += "<Assembly: System.Reflection.Obfuscation(ApplyToMembers:=True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
+    'End If
+
+    Public Class LauncherVersionInfo
+        Public AssemblyTitle As String = ""
+        Public AssemblyDescription As String = ""
+        Public AssemblyFileVersion As String = ""
+        Public AssemblyProduct As String = "" 'Portable Apps Takes this as Menu Entry
+        Public AssemblyInformationalVersion As String = ""
+        Public AssemblyCompany As String = ""
+        Public AssemblyCopyright As String = ""
+        Public AssemblyTrademark As String = ""
+        Public AssemblyVersion As String = "" 'need 1.0.0.0 Format 1, 0, 0, 0 not accepted as in AssemblyFileVersion
+        Public ComVisible As Boolean = False
+        Public ObfuscateAssembly As Boolean = False
+        Public Sub New()
+            MyBase.New
+        End Sub
+        Public Sub New(Title As String, Version As String)
+            Me.New
+            Me.AssemblyTitle = Title
+            Me.AssemblyDescription = Title
+            Me.AssemblyFileVersion = Version
+            Me.AssemblyProduct = Title
+            Me.AssemblyInformationalVersion = Version
+            Me.AssemblyVersion = Version
+        End Sub
+        Public Sub New(FileVersionInfo As System.Diagnostics.FileVersionInfo)
+            Me.New()
+            If FileVersionInfo.FileDescription.Trim.Length = 0 Then
+                Me.AssemblyTitle = LauncherName
+            Else
+                Me.AssemblyTitle = FileVersionInfo.FileDescription
+            End If
+            Me.AssemblyDescription = FileVersionInfo.Comments
+            Me.AssemblyFileVersion = FileVersionInfo.FileVersion
+            If AppTitle.Trim.Length > 0 Then
+                Me.AssemblyProduct = AppTitle
+            ElseIf FileVersionInfo.ProductName.Trim.Length = 0 Then
+                Me.AssemblyProduct = LauncherName
+            Else
+                Me.AssemblyProduct = FileVersionInfo.ProductName
+            End If
+            Me.AssemblyInformationalVersion = FileVersionInfo.ProductVersion
+            Me.AssemblyCompany = FileVersionInfo.CompanyName
+            Me.AssemblyCopyright = FileVersionInfo.LegalCopyright
+            Me.AssemblyTrademark = FileVersionInfo.LegalTrademarks
+            Me.AssemblyVersion = FileVersionInfo.FileMajorPart & "." & FileVersionInfo.FileMinorPart & "." & FileVersionInfo.FileBuildPart & "." & FileVersionInfo.FilePrivatePart
+            Me.ComVisible = ComVisible
+            Me.ObfuscateAssembly = ObfuscateAssembly
+        End Sub
+        Public Overrides Function ToString() As String
+            Dim RetVar As String = ""
+            If AssemblyTitle.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyTitle(""" & AssemblyTitle & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyDescription.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyDescription(""" & AssemblyDescription & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyFileVersion.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyFileVersion(""" & AssemblyFileVersion & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyProduct.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyProduct(""" & AssemblyProduct & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyInformationalVersion.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyInformationalVersion(""" & AssemblyInformationalVersion & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyCompany.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyCompany(""" & AssemblyCompany & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyCopyright.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyCopyright(""" & AssemblyCopyright & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyTrademark.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyTrademark(""" & AssemblyTrademark & """)>" & Microsoft.VisualBasic.vbCrLf
+            If ComVisible Then RetVar += "<Assembly: System.Runtime.InteropServices.ComVisible(True)>" & Microsoft.VisualBasic.vbCrLf
+            If ComVisible Then RetVar += "<Assembly: System.Runtime.InteropServices.Guid(""" & System.Guid.NewGuid.ToString() & """)>" & Microsoft.VisualBasic.vbCrLf
+            If AssemblyVersion.Trim.Length > 0 Then RetVar += "<Assembly: System.Reflection.AssemblyVersion(""" & AssemblyVersion & """)>" & Microsoft.VisualBasic.vbCrLf
+            RetVar += "<Assembly: System.Resources.NeutralResourcesLanguage(""en"")>" & Microsoft.VisualBasic.vbCrLf
+            RetVar += "<Assembly: System.Reflection.AssemblyCulture("""")>" & Microsoft.VisualBasic.vbCrLf
+            If ObfuscateAssembly Then
+                RetVar += "<Assembly: System.Reflection.ObfuscateAssembly(True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
+                RetVar += "<Assembly: System.Reflection.Obfuscation(ApplyToMembers:=True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
+            End If
+            Return RetVar
+        End Function
+    End Class
 
 End Module
