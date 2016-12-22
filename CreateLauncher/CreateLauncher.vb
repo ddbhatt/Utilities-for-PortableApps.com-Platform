@@ -46,8 +46,6 @@ Module CreateLauncher
     Private ExePath64 As String = CreateLauncher.CurrentDirectory & ExeRelativePath64
     Private Available64 As Boolean = System.IO.File.Exists(ExePath64)
 
-    Private CustomCmd As String = ""
-
     Private IconFilePath As String = ""
 
     Private AdminMode As Boolean = False
@@ -70,7 +68,7 @@ Module CreateLauncher
             UsageInfo += "[/app: /dir: /exe: /x32: /x64: /title:] They Take Arguments" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "[/debug /admin /shellexec /silent] Admin is always Shellexec" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "[/normal /max /min] - Window Styles - Default is HIDDEN - Last One Passed is Used" & Microsoft.VisualBasic.vbCrLf
-            UsageInfo += "[/cmd: /ico: ] Custom Command Line & Icon File" & Microsoft.VisualBasic.vbCrLf
+            UsageInfo += "[/ico: ] Icon File" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
             UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
@@ -97,7 +95,7 @@ Module CreateLauncher
             System.Windows.Forms.MessageBox.Show(UsageInfo)
             Exit Sub
         End If
-            Dim IsDebug As Boolean = False, AppVar As String = "", DirVar As String = "", ExeVar As String = "", X32Var As String = "", X64Var As String = ""
+        Dim IsDebug As Boolean = False, AppVar As String = "", DirVar As String = "", ExeVar As String = "", X32Var As String = "", X64Var As String = ""
         For Each arg As String In args
             If arg.ToLowerInvariant.Trim = "/debug".ToLowerInvariant.Trim Then
                 IsDebug = True
@@ -136,8 +134,6 @@ Module CreateLauncher
                 WindowStyle = "MAXIMIZED"
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/min") Then
                 WindowStyle = "MINIMIZED"
-            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/cmd:") Then
-                CustomCmd = arg.Substring("/cmd:".Length)
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/ico:") Then
                 IconFilePath = arg.Substring("/ico:".Length)
                 If Not System.IO.File.Exists(X64Var) Then
@@ -427,7 +423,6 @@ Module CreateLauncher
         SourceCode += "Module Launcher" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private CurrentDirectory As String = System.Environment.CurrentDirectory" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private AppDir As String = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase.Replace(""file:///"", """"))" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "    Private CustomCmd As String = """ & CustomCmd & """" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private ExeRelativePath32 As String = """ & ExeRelativePath32 & """" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private ExeRelativePath64 As String = """ & ExeRelativePath64 & """" & Microsoft.VisualBasic.vbCrLf
         If UseCheckSum Then
@@ -470,19 +465,13 @@ Module CreateLauncher
         SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "        Using cmdProcess As New System.Diagnostics.Process" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "            With cmdProcess" & Microsoft.VisualBasic.vbCrLf
-        If CustomCmd.Trim.Length > 0 Then
-            SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo(CustomCmd)" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
-        Else
-            SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                    If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                        .Arguments = """""""" & String.Join("" "", args) & """"""""" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                    End If" & Microsoft.VisualBasic.vbCrLf
-        End If
-
+        SourceCode += "                .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                    If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                        .Arguments = """""""" & String.Join("" "", args) & """"""""" & Microsoft.VisualBasic.vbCrLf
+        SourceCode += "                    End If" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
         If UseShellExec Then
             SourceCode += "                    .UseShellExecute = True" & Microsoft.VisualBasic.vbCrLf
