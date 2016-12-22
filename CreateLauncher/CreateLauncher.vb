@@ -441,7 +441,6 @@ Module CreateLauncher
         SourceCode += "    Private ExePath64 As String = Launcher.AppDir & ExeRelativePath64" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Private Available64 As Boolean = System.IO.File.Exists(ExePath64)" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "    Sub Main(args As String())" & Microsoft.VisualBasic.vbCrLf
-        SourceCode += "        " & Microsoft.VisualBasic.vbCrLf
         SourceCode += "        Dim ExePath As String = """"" & Microsoft.VisualBasic.vbCrLf
         SourceCode += "        If OsSystemBit = 64 And Available64 Then" & Microsoft.VisualBasic.vbCrLf
         If UseCheckSum Then
@@ -479,7 +478,9 @@ Module CreateLauncher
             SourceCode += "                With .StartInfo" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "                    .FileName = ExePath" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "                    .WorkingDirectory = System.IO.Path.GetDirectoryName(ExePath)" & Microsoft.VisualBasic.vbCrLf
-            SourceCode += "                    .Arguments = """""""" & String.Join("" "", args) & """"""""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .Arguments = """""""" & String.Join("" "", args) & """"""""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    End If" & Microsoft.VisualBasic.vbCrLf
         End If
 
         SourceCode += "                    .LoadUserProfile = True" & Microsoft.VisualBasic.vbCrLf
