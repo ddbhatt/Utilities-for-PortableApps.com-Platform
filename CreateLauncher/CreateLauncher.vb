@@ -58,7 +58,25 @@ Module CreateLauncher
     Private WindowStyle As String = "HIDDEN"
     Private IsConsoleApp As Boolean = False
     Private IsCustomCmd As Boolean = False
-    Private EmbedBatchFile As String = ""
+
+    Private BatchFile32 As String = ""
+    Private BatchFile64 As String = ""
+
+    Private IsBatchExe As Boolean = False
+    Private IsRunningInConsole As Boolean = Not (System.Console.Title = System.Environment.GetCommandLineArgs()(0) AndAlso
+            System.Environment.GetCommandLineArgs()(0) = System.Reflection.Assembly.GetEntryAssembly().Location AndAlso
+            System.Environment.CurrentDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location))
+    Private Sub ShowMessage(Message As String, Optional ExitApp As Boolean = False)
+        If IsRunningInConsole Then
+            System.Console.WriteLine(Message)
+        Else
+            System.Windows.Forms.MessageBox.Show(Message)
+        End If
+        If ExitApp Then
+            System.Environment.Exit(1)
+        End If
+    End Sub
+
 
     Public Sub ShowUsage()
         Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
@@ -94,8 +112,7 @@ Module CreateLauncher
         UsageInfo += "x64, x86-64, x86_64, 64Bit, 64-Bit, 64_Bit, 64, Win64, amd64" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "x32, x86, 32Bit, 32-Bit, 32_Bit, 32, Win32, amd32" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
-        System.Windows.Forms.MessageBox.Show(UsageInfo)
-        System.Environment.Exit(1)
+        ShowMessage(UsageInfo, True)
     End Sub
 
     Sub Main(args As String())
@@ -111,10 +128,8 @@ Module CreateLauncher
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/dir:") Then
                 DirVar = arg.Substring("/dir:".Length)
                 If Not System.IO.Directory.Exists(System.IO.Path.Combine(CurrentDirectory, DirVar)) Then
-                    System.Windows.Forms.MessageBox.Show("Directory Not Found! " & arg.Substring("/dir:".Length))
-                    System.Environment.Exit(1)
+                    ShowMessage("Directory Not Found! " & arg.Substring("/dir:".Length), True)
                 End If
-
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/exe:") Then
                 ExeVar = System.IO.Path.GetFileNameWithoutExtension(arg.Substring("/exe:".Length))
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/x32:") Then
@@ -123,8 +138,7 @@ Module CreateLauncher
                     X32Var = System.IO.Path.Combine(CurrentDirectory, X32Var)
                 End If
                 If Not System.IO.File.Exists(X32Var) Then
-                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/x32:".Length))
-                    System.Environment.Exit(1)
+                    ShowMessage("File Not Found! " & arg.Substring("/x32:".Length), True)
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/x64:") Then
                 X64Var = arg.Substring("/x64:".Length)
@@ -132,8 +146,7 @@ Module CreateLauncher
                     X64Var = System.IO.Path.Combine(CurrentDirectory, X64Var)
                 End If
                 If Not System.IO.File.Exists(X64Var) Then
-                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/x64:".Length))
-                    System.Environment.Exit(1)
+                    ShowMessage("File Not Found! " & arg.Substring("/x64:".Length), True)
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/admin") Then
                 AdminMode = True
@@ -153,8 +166,7 @@ Module CreateLauncher
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/ico:") Then
                 IconFilePath = arg.Substring("/ico:".Length)
                 If Not System.IO.File.Exists(IconFilePath) Then
-                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/ico:".Length))
-                    System.Environment.Exit(1)
+                    ShowMessage("File Not Found! " & arg.Substring("/ico:".Length), True)
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/noicon") Then
                 IconFilePath = " "
@@ -188,10 +200,32 @@ Module CreateLauncher
                 IsCustomCmd = True
                 If IconFilePath.Trim.Length = 0 Then IconFilePath = " "
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/bat:") Then
-                EmbedBatchFile = arg.Substring("/bat:".Length)
+                IsBatchExe = True
+                BatchFile32 = arg.Substring("/bat:".Length)
+                BatchFile64 = BatchFile32
                 If Not System.IO.File.Exists(IconFilePath) Then
-                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/bat:".Length))
-                    System.Environment.Exit(1)
+                    ShowMessage("File Not Found! " & arg.Substring("/bat:".Length), True)
+                End If
+                If Not IsBatchFileOK(BatchFile32) Then
+                    ShowMessage("Can Not handle %* in Batch File " & arg.Substring("/bat:".Length), True)
+                End If
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/bat32:") Then
+                IsBatchExe = True
+                BatchFile32 = arg.Substring("/bat32:".Length)
+                If Not System.IO.File.Exists(IconFilePath) Then
+                    ShowMessage("File Not Found! " & arg.Substring("/bat32:".Length), True)
+                End If
+                If Not IsBatchFileOK(BatchFile32) Then
+                    ShowMessage("Can Not handle %* in Batch File " & arg.Substring("/bat32:".Length), True)
+                End If
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/bat64:") Then
+                IsBatchExe = True
+                BatchFile64 = arg.Substring("/bat64:".Length)
+                If Not System.IO.File.Exists(IconFilePath) Then
+                    ShowMessage("File Not Found! " & arg.Substring("/bat64:".Length), True)
+                End If
+                If Not IsBatchFileOK(BatchFile64) Then
+                    ShowMessage("Can Not handle %* in Batch File " & arg.Substring("/bat64:".Length), True)
                 End If
             Else
                 LauncherName = arg
@@ -218,6 +252,15 @@ Module CreateLauncher
         Dim lvi As LauncherVersionInfo = Nothing
 
         If IsCustomCmd Then
+            lvi = New LauncherVersionInfo(AppTitle, "1.0.0.0")
+        ElseIf IsBatchExe Then
+            If AppTitle.Trim.Length = 0 Then
+                If BatchFile64.Trim.Length > 0 Then
+                    AppTitle = System.IO.Path.GetFileNameWithoutExtension(BatchFile64)
+                ElseIf BatchFile32.Trim.Length > 0 Then
+                    AppTitle = System.IO.Path.GetFileNameWithoutExtension(BatchFile32)
+                End If
+            End If
             lvi = New LauncherVersionInfo(AppTitle, "1.0.0.0")
         Else
 
@@ -273,8 +316,7 @@ Module CreateLauncher
                 If Available64 Then
                     DetailsFromExe = ExePath64
                 Else
-                    System.Console.WriteLine("Can not continue!")
-                    System.Environment.Exit(1)
+                    ShowMessage("Can Not continue!", True)
                 End If
             End If
 
@@ -313,8 +355,7 @@ Module CreateLauncher
             DebugText += "OsSystemBit: " & OsSystemBit & Microsoft.VisualBasic.vbCrLf
             DebugText += "ExePath32: " & ExePath32 & Microsoft.VisualBasic.vbCrLf
             DebugText += "ExePath64: " & ExePath64 & Microsoft.VisualBasic.vbCrLf
-            System.Windows.Forms.MessageBox.Show(DebugText)
-            Exit Sub
+            ShowMessage(DebugText, True)
         End If
 
 
@@ -333,9 +374,21 @@ Module CreateLauncher
             Else
                 Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:exe /platform:anycpu"
             End If
+        ElseIf IsBatchExe Then
+            Dim ResourceString As String = "/res:'"
+            If BatchFile32.Trim.Length > 0 Then ResourceString &= BatchFile32 & ",BatchFile32.bat,Private' "
+            If BatchFile64.Trim.Length > 0 Then ResourceString &= BatchFile64 & ",BatchFile64.bat,Private' "
+            ResourceString = ResourceString.Trim
+            If IconFilePath.Trim.Length > 0 Then
+                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu " & ResourceString & " /win32icon:" & IconFilePath
+            Else
+                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu " & ResourceString
+            End If
+            ShowMessage(Parameters.CompilerOptions)
+            ShowMessage("WIP - Batch Compilation", True)
         Else
             If IconFilePath.Trim.Length > 0 Then
-                Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu /win32icon:" & IconFilePath
+                Parameters.CompilerOptions = " / reference : System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu /win32icon:" & IconFilePath
             Else
                 Parameters.CompilerOptions = " /reference:System.dll,System.Windows.Forms.dll /optimize /optionstrict+ /target:winexe /platform:anycpu"
             End If
@@ -353,9 +406,9 @@ Module CreateLauncher
 
         If Not IsSilent Then
             If (Results.Errors.HasErrors) Then
-                System.Windows.Forms.MessageBox.Show("Can not customize for App: " & LauncherName)
+                ShowMessage("Can not customize for App: " & LauncherName)
             Else
-                System.Windows.Forms.MessageBox.Show("Customized for App: " & LauncherName & Microsoft.VisualBasic.vbCrLf & "Relative Paths: " & Microsoft.VisualBasic.vbCrLf & "64-Bit @ " & ExeRelativePath64 & Microsoft.VisualBasic.vbCrLf & "32-Bit @ " & ExeRelativePath32)
+                ShowMessage("Customized for App: " & LauncherName & Microsoft.VisualBasic.vbCrLf & "Relative Paths: " & Microsoft.VisualBasic.vbCrLf & "64-Bit @ " & ExeRelativePath64 & Microsoft.VisualBasic.vbCrLf & "32-Bit @ " & ExeRelativePath32)
             End If
         End If
 
@@ -371,7 +424,7 @@ Module CreateLauncher
                 RetVar = ourHashAlg.ComputeHash(fileToHash)
                 fileToHash.Close()
             Catch ex As System.IO.IOException
-                System.Windows.Forms.MessageBox.Show("Program Open! Cannot get lock to compute hash!")
+                ShowMessage("Program Open! Cannot get lock to compute hash!")
             End Try
         End If
         Return System.Text.Encoding.Unicode.GetString(RetVar)
@@ -385,6 +438,19 @@ Module CreateLauncher
             End If
         Next
         Return False
+    End Function
+
+    'Check for variables not allowed
+    Function IsBatchFileOK(BatchFilePathAndName As String) As Boolean
+        Dim BatchContent As String = ""
+        Using sr As System.IO.StreamReader = New System.IO.StreamReader(BatchFilePathAndName)
+            BatchContent = sr.ReadToEnd
+        End Using
+        If BatchContent.Contains("%*") Then
+            Return False
+        Else
+            Return True
+        End If
     End Function
 
     Public Function FindExe(SearchPath As String, FileStartingName As String, Optional Win64 As Boolean = False) As String
@@ -460,11 +526,10 @@ Module CreateLauncher
             RetVar = ""
         Else
             If Win64 Then
-                System.Console.WriteLine("Found Multiple Exes for 64-Bit")
+                ShowMessage("Found Multiple Exes for 64-Bit", True)
             Else
-                System.Console.WriteLine("Found Multiple Exes for 32-Bit")
+                ShowMessage("Found Multiple Exes for 32-Bit", True)
             End If
-            System.Environment.Exit(1)
         End If
 
         Return RetVar
@@ -479,6 +544,9 @@ Module CreateLauncher
         If IsCustomCmd Then
             If CustomCmd32.Trim.Length > 0 Then SourceCode += "    Private CustomCmd32 As String = """ & CustomCmd32 & """" & Microsoft.VisualBasic.vbCrLf
             If CustomCmd64.Trim.Length > 0 Then SourceCode += "    Private CustomCmd64 As String = """ & CustomCmd64 & """" & Microsoft.VisualBasic.vbCrLf
+        ElseIf IsBatchExe Then
+            If BatchFile32.Trim.Length > 0 Then SourceCode += "    Private BatchFile32 As String = ""BatchFile32.bat""" & Microsoft.VisualBasic.vbCrLf
+            If BatchFile64.Trim.Length > 0 Then SourceCode += "    Private BatchFile64 As String = ""BatchFile64.bat""" & Microsoft.VisualBasic.vbCrLf
         Else
             SourceCode += "    Private ExeRelativePath32 As String = """ & ExeRelativePath32 & """" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "    Private ExeRelativePath64 As String = """ & ExeRelativePath64 & """" & Microsoft.VisualBasic.vbCrLf
@@ -524,6 +592,54 @@ Module CreateLauncher
             SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "            End Using" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
+        ElseIf IsBatchExe Then
+            SourceCode += "        Dim Command As String = """"" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        For i As Integer = 0 To args.Length - 1" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            If args(i).Contains("" "") Then args(i) = """""""" & args(i) & """"""""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Next" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Dim BatchFile As String = """"" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        If OsSystemBit = 64 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            BatchFile = BatchFile64" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        ElseIf OsSystemBit = 32 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            BatchFile = BatchFile32" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Dim BatchFileContent As String = """"" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Using Stream As System.IO.Stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceFullName(BatchFile))" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Using sr As New System.IO.StreamReader(Stream)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                Using tr As System.IO.TextReader = sr" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    BatchFileContent = tr.ReadToEnd" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                End Using" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            End Using" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End Using" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        'Inject SHIFT for passing current exe path and location as %0" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        BatchFileContent = ""@Echo Off"" & Microsoft.VisualBasic.vbCrLf & ""SHIFT"" & Microsoft.VisualBasic.vbCrLf & BatchFileContent" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Dim TempFileName As String = System.IO.Path.GetTempPath() + System.Guid.NewGuid().ToString().Replace("" - "", """") + "".bat""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Do Until Not System.IO.File.Exists(TempFileName)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            TempFileName = System.IO.Path.GetTempPath() + System.Guid.NewGuid().ToString().Replace("" - "", """") + "".bat""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Loop" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Using fs As New System.IO.StreamWriter(TempFileName, False)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            fs.WriteLine(BatchFileContent)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End Using" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        If TempFileName.Trim.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            Using cmdProcess As New System.Diagnostics.Process" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                With cmdProcess" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .StartInfo = New System.Diagnostics.ProcessStartInfo" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    With .StartInfo" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .FileName = ""cmd.exe""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .WorkingDirectory = AppDir" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        If args.Length > 0 Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                            .Arguments = "" / c "" & TempFileName & "" """""" & System.IO.Path.Combine(AppDir, LauncherName & "".exe"") & """""" "" & String.Join("" "", args)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        Else" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                            .Arguments = "" / c "" & TempFileName & "" """""" & System.IO.Path.Combine(AppDir, LauncherName & "".exe"") & """"""""" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                        .UseShellExecute = False" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    End With" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .Start()" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                    .WaitForExit()" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                End With" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            End Using" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        If System.IO.File.Exists(TempFileName) Then System.IO.File.Delete(TempFileName)" & Microsoft.VisualBasic.vbCrLf
         Else
             SourceCode += "        Dim ExePath As String = """"" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "        If OsSystemBit = 64 And Available64 Then" & Microsoft.VisualBasic.vbCrLf
@@ -613,6 +729,15 @@ Module CreateLauncher
             SourceCode += "            End Try" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "        End If" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "        Return System.Text.Encoding.Unicode.GetString(RetVar)" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "    End Function" & Microsoft.VisualBasic.vbCrLf
+            'Batch Support Function
+            SourceCode += "    Private Function ResourceFullName(BatchName As String) As String" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        For Each ResourceName As String In System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceNames" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            If ResourceName.ToLowerInvariant.EndsWith(BatchName.ToLowerInvariant) Then" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "                Return ResourceName" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "            End If" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Next" & Microsoft.VisualBasic.vbCrLf
+            SourceCode += "        Return """"" & Microsoft.VisualBasic.vbCrLf
             SourceCode += "    End Function" & Microsoft.VisualBasic.vbCrLf
 
             SourceCode += "    Private Function HasChanged(filename As String, hash As String) As Boolean" & Microsoft.VisualBasic.vbCrLf
