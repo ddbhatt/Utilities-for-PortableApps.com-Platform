@@ -58,6 +58,7 @@ Module CreateLauncher
     Private WindowStyle As String = "HIDDEN"
     Private IsConsoleApp As Boolean = False
     Private IsCustomCmd As Boolean = False
+    Private EmbedBatchFile As String = ""
 
     Public Sub ShowUsage()
         Dim UsageInfo As String = "Usage: CreateLauncher.exe ""Application Name""" & Microsoft.VisualBasic.vbCrLf
@@ -69,6 +70,7 @@ Module CreateLauncher
         UsageInfo += "[/ico: /noicon] Icon File" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "[/console] ConsoleApp (No ShellExec)" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "[/cmd: /cmd32: /cmd64:] CustomCmd 32 will run only on 32bit and 64 will run only on 64 bit (No Admin, No ShellExec, Normal Console Only)" & Microsoft.VisualBasic.vbCrLf
+        UsageInfo += "[/bat: /bat32: /bat64:] Bat File to Embed in Exe" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "Possible Scenarios" & Microsoft.VisualBasic.vbCrLf
         UsageInfo += "" & Microsoft.VisualBasic.vbCrLf
@@ -97,11 +99,6 @@ Module CreateLauncher
     End Sub
 
     Sub Main(args As String())
-
-        'If args.Length > 2 OrElse args.Length = 0 Then
-        '    System.Windows.Forms.MessageBox.Show("Usage: CreateLauncher.exe ""Application Name"" [/debug]")
-        '    Exit Sub
-        'End If
         If args.Length = 0 Then
             ShowUsage()
         End If
@@ -122,19 +119,21 @@ Module CreateLauncher
                 ExeVar = System.IO.Path.GetFileNameWithoutExtension(arg.Substring("/exe:".Length))
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/x32:") Then
                 X32Var = arg.Substring("/x32:".Length)
-                If Not System.IO.File.Exists(X32Var) AndAlso Not System.IO.File.Exists(CurrentDirectory & X32Var) Then
+                If Not System.IO.Path.IsPathRooted(X32Var) Then
+                    X32Var = System.IO.Path.Combine(CurrentDirectory, X32Var)
+                End If
+                If Not System.IO.File.Exists(X32Var) Then
                     System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/x32:".Length))
                     System.Environment.Exit(1)
-                ElseIf System.IO.File.Exists(CurrentDirectory & X32Var) Then
-                    X32Var = CurrentDirectory & X32Var
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/x64:") Then
                 X64Var = arg.Substring("/x64:".Length)
-                If Not System.IO.File.Exists(X64Var) AndAlso Not System.IO.File.Exists(CurrentDirectory & X64Var) Then
+                If Not System.IO.Path.IsPathRooted(X64Var) Then
+                    X64Var = System.IO.Path.Combine(CurrentDirectory, X64Var)
+                End If
+                If Not System.IO.File.Exists(X64Var) Then
                     System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/x64:".Length))
                     System.Environment.Exit(1)
-                ElseIf System.IO.File.Exists(CurrentDirectory & X64Var) Then
-                    X64Var = CurrentDirectory & X64Var
                 End If
             ElseIf arg.ToLowerInvariant.Trim.StartsWith("/admin") Then
                 AdminMode = True
@@ -188,6 +187,12 @@ Module CreateLauncher
                 WindowStyle = "NORMAL"
                 IsCustomCmd = True
                 If IconFilePath.Trim.Length = 0 Then IconFilePath = " "
+            ElseIf arg.ToLowerInvariant.Trim.StartsWith("/bat:") Then
+                EmbedBatchFile = arg.Substring("/bat:".Length)
+                If Not System.IO.File.Exists(IconFilePath) Then
+                    System.Windows.Forms.MessageBox.Show("File Not Found! " & arg.Substring("/bat:".Length))
+                    System.Environment.Exit(1)
+                End If
             Else
                 LauncherName = arg
             End If
@@ -625,40 +630,6 @@ Module CreateLauncher
 
         Return SourceCode
     End Function
-
-
-    'If FileVersionInfo.FileDescription Is Nothing OrElse FileVersionInfo.FileDescription.Trim.Length = 0 Then
-    '    SourceCode += "<Assembly: System.Reflection.AssemblyTitle(""" & LauncherName & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
-    'Else
-    '    SourceCode += "<Assembly: System.Reflection.AssemblyTitle(""" & FileVersionInfo.FileDescription & " (via DD's Launcher)"")>" & Microsoft.VisualBasic.vbCrLf
-    'End If
-
-    'If FileVersionInfo.Comments IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyDescription(""" & FileVersionInfo.Comments & """)>" & Microsoft.VisualBasic.vbCrLf
-    'If FileVersionInfo.FileVersion IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyFileVersion(""" & FileVersionInfo.FileVersion & """)>" & Microsoft.VisualBasic.vbCrLf
-    ''Portable Apps Takes this as Menu Entry
-    'If AppTitle.Trim.Length > 0 Then
-    '    SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & AppTitle & """)>" & Microsoft.VisualBasic.vbCrLf
-    'ElseIf FileVersionInfo.ProductName Is Nothing OrElse FileVersionInfo.ProductName.Trim.Length = 0 Then
-    '    SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & LauncherName & """)>" & Microsoft.VisualBasic.vbCrLf
-    'Else
-    '    SourceCode += "<Assembly: System.Reflection.AssemblyProduct(""" & FileVersionInfo.ProductName & """)>" & Microsoft.VisualBasic.vbCrLf
-    'End If
-    'If FileVersionInfo.ProductVersion IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyInformationalVersion(""" & FileVersionInfo.ProductVersion & """)>" & Microsoft.VisualBasic.vbCrLf
-    'If FileVersionInfo.CompanyName IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyCompany(""" & FileVersionInfo.CompanyName & """)>" & Microsoft.VisualBasic.vbCrLf
-    'If FileVersionInfo.LegalCopyright IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyCopyright(""" & FileVersionInfo.LegalCopyright & """)>" & Microsoft.VisualBasic.vbCrLf
-    'If FileVersionInfo.LegalTrademarks IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyTrademark(""" & FileVersionInfo.LegalTrademarks & """)>" & Microsoft.VisualBasic.vbCrLf
-    'If ComVisible Then
-    '    SourceCode += "<Assembly: System.Runtime.InteropServices.ComVisible(True)>" & Microsoft.VisualBasic.vbCrLf
-    '    SourceCode += "<Assembly: System.Runtime.InteropServices.Guid(""" & System.Guid.NewGuid.ToString() & """)>" & Microsoft.VisualBasic.vbCrLf
-    'End If
-    ''FileVersionInfo
-    'If FileVersionInfo.FileVersion IsNot Nothing Then SourceCode += "<Assembly: System.Reflection.AssemblyVersion(""" & FileVersionInfo.FileMajorPart & "." & FileVersionInfo.FileMinorPart & "." & FileVersionInfo.FileBuildPart & "." & FileVersionInfo.FilePrivatePart & """)>" & Microsoft.VisualBasic.vbCrLf
-    'SourceCode += "<Assembly: System.Resources.NeutralResourcesLanguage(""en"")>" & Microsoft.VisualBasic.vbCrLf
-    'SourceCode += "<Assembly: System.Reflection.AssemblyCulture("""")>" & Microsoft.VisualBasic.vbCrLf
-    'If ObfuscateAssembly Then
-    '    SourceCode += "<Assembly: System.Reflection.ObfuscateAssembly(True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
-    '    SourceCode += "<Assembly: System.Reflection.Obfuscation(ApplyToMembers:=True, StripAfterObfuscation:=True)>" & Microsoft.VisualBasic.vbCrLf
-    'End If
 
     Public Class LauncherVersionInfo
         Public AssemblyTitle As String = ""
