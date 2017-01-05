@@ -1,1 +1,1 @@
-"C:\Program Files (x86)\MSBuild\14.0\Bin\vbc.exe" CreateLauncher.vb TsudaKageyu.vb /reference:System.dll,System.Windows.Forms.dll /optimize+ /optionstrict+ /target:winexe /platform:anycpu /out:CreateLauncher.exe
+"C:\Program Files (x86)\MSBuild\14.0\Bin\vbc.exe" CreateLauncher.vb TsudaKageyu.vb /reference:System.dll,System.Windows.Forms.dll /optimize+ /optionstrict+ /target:exe /platform:anycpu /out:CreateLauncher.exe
